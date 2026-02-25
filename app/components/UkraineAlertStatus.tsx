@@ -58,9 +58,14 @@ export default function UkraineAlertStatus({ regionName, hasAlert }: Props) {
           color={hasAlert ? C.alert : C.safe}
           style={styles.icon}
         />
-        <Text style={[styles.title, { color: C.textPrimary }]}>
-          {t.regionLabel}{' '}
-          <Text style={[styles.region, { color: C.primary }]}>{regionName}</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>{t.regionLabel} </Text>
+        <Text
+          style={[styles.region, { color: C.primary, flex: 1 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {regionName}
         </Text>
       </View>
       <Text style={[styles.status, { color: hasAlert ? C.alert : C.safe }]}>
