@@ -4,10 +4,16 @@
     "slug": "AirCautions",
     "version": "1.0.0",
     "orientation": "portrait",
+    "updates": {
+      "url": "https://u.expo.dev/b81c8770-2ae9-4321-bb47-86664221f3da"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },

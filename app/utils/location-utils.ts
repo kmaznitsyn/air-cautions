@@ -2,6 +2,7 @@ import { LocationGeocodedAddress } from "expo-location";
 import { regionData } from "../constants/regionsData";
 
 export const getUserRegionMatch = (address: any) => {
+  if (!address || !address[0]) return null;
   const inputRegion = address[0].region || "";
   const inputSubregion = address[0].subregion || "";
 
