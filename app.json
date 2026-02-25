@@ -13,7 +13,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
@@ -39,7 +38,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#0F172A"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
