@@ -1,56 +1,85 @@
-import { Text, View, Linking, Pressable, StyleSheet } from "react-native";
-import { Stack } from "expo-router";
+import { Text, View, Linking, StyleSheet } from 'react-native';
+import { Stack } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { Typography, Spacing, Radius } from './constants/theme';
+import { useTheme } from './context/ThemeContext';
 
 export default function AdditionalInformation() {
+  const { C } = useTheme();
+
   const openLink = () => {
-    Linking.openURL("https://alerts.in.ua/");
+    Linking.openURL('https://alerts.in.ua/');
   };
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: "Additional Information" }} />
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]}>
+      <Stack.Screen options={{ title: 'Additional Information' }} />
 
-      <Text style={styles.title}>⚠️ Air Raid Risk Insight</Text>
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.iconRow}>
+          <Ionicons name="warning" size={40} color={C.alert} />
+        </Animated.View>
 
-      <Text style={styles.description}>
-        This app helps users assess the current level of danger in specific
-        regions based on official alert data.
-      </Text>
+        <Animated.Text
+          entering={FadeInDown.delay(80).duration(400)}
+          style={[styles.title, { color: C.textPrimary }]}
+        >
+          Air Raid Risk Insight
+        </Animated.Text>
 
-      <Text style={styles.description}>
-        For a complete overview of alerts across all regions and sources, visit{" "}
-        <Text style={styles.link} onPress={openLink}>
-          this page
-        </Text>
-        .
-      </Text>
-    </View>
+        <Animated.Text
+          entering={FadeInDown.delay(160).duration(400)}
+          style={[styles.description, { color: C.textSecondary }]}
+        >
+          This app helps users assess the current level of danger in specific
+          regions based on official alert data.
+        </Animated.Text>
+
+        <Animated.Text
+          entering={FadeInDown.delay(240).duration(400)}
+          style={[styles.description, { color: C.textSecondary }]}
+        >
+          For a complete overview of alerts across all regions and sources, visit{' '}
+          <Text style={[styles.link, { color: C.primary }]} onPress={openLink}>
+            this page
+          </Text>
+          .
+        </Animated.Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    backgroundColor: "#F9FAFB",
+    padding: Spacing.lg,
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+  },
+  iconRow: {
+    alignItems: 'center',
+    marginBottom: Spacing.md,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 16,
-    color: "#111827",
+    ...Typography.heading,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
   },
   description: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#374151",
+    ...Typography.body,
+    textAlign: 'center',
     marginBottom: 12,
     lineHeight: 24,
   },
   link: {
-    color: "#2563EB",
-    textDecorationLine: "underline",
-    fontWeight: "600",
+    fontFamily: 'Inter_600SemiBold',
+    textDecorationLine: 'underline',
   },
 });

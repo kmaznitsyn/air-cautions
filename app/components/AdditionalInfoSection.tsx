@@ -1,41 +1,40 @@
-// components/AdditionalInfoSection.tsx
-import { View, Text, StyleSheet } from "react-native";
-import { Button } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import AnimatedButton from './AnimatedButton';
+import { Typography, Spacing } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AdditionalInfoSection() {
   const router = useRouter();
+  const { C } = useTheme();
 
   return (
     <View style={styles.section}>
-      <Text style={styles.subMessage}>
-        ℹ️ For more detailed information, click the button below
+      <Text style={[styles.subMessage, { color: C.textSecondary }]}>
+        For more detailed information, click the button below
       </Text>
 
-      <Button
-        mode="outlined"
+      <AnimatedButton
+        label="Additional Information"
+        icon="information-circle-outline"
+        variant="secondary"
+        onPress={() => router.navigate('/additional-information')}
         style={styles.button}
-        onPress={() => router.navigate("/additional-information")}
-      >
-        Additional Information
-      </Button>
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 32,
+    marginBottom: Spacing.xl,
   },
   subMessage: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 12,
-    color: "#374151",
+    ...Typography.label,
+    textAlign: 'center',
+    marginBottom: Spacing.sm + 4,
   },
   button: {
-    marginHorizontal: 32,
-    borderRadius: 12,
-    paddingVertical: 6,
+    alignSelf: 'stretch',
   },
 });

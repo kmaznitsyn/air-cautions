@@ -1,28 +1,108 @@
-import { Text, View, StyleSheet } from "react-native";
-import SelectDropdown from "react-native-select-dropdown";
-import { regionData } from "./constants/regionsData";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Button, Snackbar } from "react-native-paper";
-import { Stack } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
+import SelectDropdown from 'react-native-select-dropdown';
+import { regionData } from './constants/regionsData';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { Snackbar } from 'react-native-paper';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  FadeInDown,
+  SlideInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+
 import {
   getCurrentStatus,
   defineAlertFromStatus,
-} from "./utils/air-raid-utils";
+} from './utils/air-raid-utils';
+import AnimatedButton from './components/AnimatedButton';
+import UkraineAlertStatus from './components/UkraineAlertStatus';
+import { Typography, Spacing, Radius } from './constants/theme';
+import { useTheme } from './context/ThemeContext';
+
+function PulsingRing() {
+  const { C } = useTheme();
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.35, { duration: 900 }),
+        withTiming(1, { duration: 900 })
+      ),
+      -1,
+      true
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.3, { duration: 900 }),
+        withTiming(1, { duration: 900 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <View style={pulseStyles.container}>
+      <Animated.View style={[pulseStyles.ring, { borderColor: C.primary }, ringStyle]} />
+      <View style={pulseStyles.iconWrapper}>
+        <Ionicons name="shield" size={40} color={C.primary} />
+      </View>
+    </View>
+  );
+}
+
+const pulseStyles = StyleSheet.create({
+  container: {
+    width: 90,
+    height: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  ring: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default function AirRaidState() {
+  const { C } = useTheme();
   const [selectedRegion, setSelectedRegion] = useState<{
     name: string;
     uid: number;
   } | null>(null);
   const [isAlert, setIsAlert] = useState(false);
-  const [alertStatusText, setAlertStatusText] = useState("");
+  const [alertStatusText, setAlertStatusText] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [isError, setIsError] = useState(false);
   const [disableButtons, setDisableButtons] = useState(false);
 
+  const { width } = useWindowDimensions();
+  const dropdownWidth = width * 0.85;
+
   useEffect(() => {
-    setAlertStatusText("");
+    setAlertStatusText('');
     setIsAlert(false);
   }, [selectedRegion]);
 
@@ -45,7 +125,7 @@ export default function AirRaidState() {
       setDisableButtons(true);
       const timeout = setTimeout(() => {
         setDisableButtons(false);
-      }, 2 * 60 * 1000); // 2 minutes
+      }, 2 * 60 * 1000);
 
       return () => clearTimeout(timeout);
     }
@@ -72,14 +152,14 @@ export default function AirRaidState() {
 
     try {
       const status = await getCurrentStatus(selectedRegion?.uid!);
+      const alert = defineAlertFromStatus(status);
+      setIsAlert(alert);
 
-      setIsAlert(defineAlertFromStatus(status));
-
-      if (status === "A") {
+      if (status === 'A') {
         setAlertStatusText(
           `There is an existing alert in ${selectedRegion?.name}, be careful`
         );
-      } else if (status === "P") {
+      } else if (status === 'P') {
         setAlertStatusText(
           `There is partial alert in ${selectedRegion?.name}, it is better to stay at home today`
         );
@@ -88,8 +168,15 @@ export default function AirRaidState() {
           `Currently there is no existing alert in ${selectedRegion?.name}`
         );
       }
+
+      Haptics.notificationAsync(
+        alert
+          ? Haptics.NotificationFeedbackType.Error
+          : Haptics.NotificationFeedbackType.Success
+      );
     } catch (e) {
       setIsError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsFetching(false);
     }
@@ -98,141 +185,156 @@ export default function AirRaidState() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: "Air Raid State" }} />
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]}>
+      <Stack.Screen options={{ title: 'Air Raid State' }} />
 
       <Snackbar visible={isError} onDismiss={() => setIsError(false)}>
         There was occured an error. Please try later.
       </Snackbar>
 
-      {isFetching && <ActivityIndicator size="large" color="#2563EB" />}
+      {isFetching && <PulsingRing />}
 
-      <Text style={styles.title}>Choose your region</Text>
+      <Animated.View entering={FadeInDown.delay(0).duration(400)}>
+        <Text style={[styles.title, { color: C.textPrimary }]}>Choose your region</Text>
+      </Animated.View>
 
-      <SelectDropdown
-        ref={dropdownRef}
-        data={regionData}
-        onSelect={(selectedItem) => {
-          setSelectedRegion(selectedItem);
-        }}
-        defaultValue={selectedRegion}
-        renderButton={(selectedItem) => (
-          <View style={styles.dropdownButtonStyle}>
-            <Text style={styles.dropdownButtonTxtStyle}>
-              {(selectedItem && selectedItem.name) || "Please select region"}
-            </Text>
-          </View>
-        )}
-        renderItem={(item, index, isSelected) => (
-          <View
-            style={[
-              styles.dropdownItemStyle,
-              isSelected && { backgroundColor: "#D2D9DF" },
-            ]}
-          >
-            <Text style={styles.dropdownItemTxtStyle}>{item.name}</Text>
-          </View>
-        )}
-        dropdownStyle={styles.dropdownMenuStyle}
-        showsVerticalScrollIndicator={false}
-      />
+      <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+        <SelectDropdown
+          ref={dropdownRef}
+          data={regionData}
+          onSelect={(selectedItem) => {
+            setSelectedRegion(selectedItem);
+          }}
+          defaultValue={selectedRegion}
+          renderButton={(selectedItem) => (
+            <View
+              style={[
+                styles.dropdownButtonStyle,
+                { width: dropdownWidth, backgroundColor: C.surface, borderColor: C.border },
+              ]}
+            >
+              <Text style={[styles.dropdownButtonTxtStyle, { color: C.textPrimary }]}>
+                {(selectedItem && selectedItem.name) || 'Please select region'}
+              </Text>
+            </View>
+          )}
+          renderItem={(item, _index, isSelected) => (
+            <View
+              style={[
+                styles.dropdownItemStyle,
+                { backgroundColor: C.surface },
+                isSelected && { backgroundColor: C.border },
+              ]}
+            >
+              <Text style={[styles.dropdownItemTxtStyle, { color: C.textPrimary }]}>
+                {item.name}
+              </Text>
+            </View>
+          )}
+          dropdownStyle={[
+            styles.dropdownMenuStyle,
+            { width: dropdownWidth, backgroundColor: C.surface, borderColor: C.border },
+          ]}
+          showsVerticalScrollIndicator={false}
+        />
+      </Animated.View>
 
-      <View style={styles.buttonsContainer}>
-        <Button
+      <Animated.View
+        entering={FadeInDown.delay(160).duration(400)}
+        style={styles.buttonsContainer}
+      >
+        <AnimatedButton
           disabled={disableButtons}
-          mode="contained"
+          label="Get the state"
+          icon="radio-outline"
+          variant="primary"
           onPress={stateHandler}
           style={styles.button}
-        >
-          Get the state
-        </Button>
+        />
 
         {!isAlert && (
-          <Button
+          <AnimatedButton
             disabled={disableButtons}
-            mode="contained"
+            label="Predict"
+            icon="analytics-outline"
+            variant="secondary"
             onPress={() =>
               router.push({
-                pathname: "/air-raid-prediction",
+                pathname: '/air-raid-prediction',
                 params: { ...selectedRegion },
               })
             }
             style={styles.button}
-          >
-            Predict
-          </Button>
+          />
         )}
-      </View>
+      </Animated.View>
 
-      {alertStatusText && (
-        <View style={styles.alertContainer}>
-          <Text style={styles.alertText}>{alertStatusText}</Text>
-        </View>
+      {alertStatusText && selectedRegion && (
+        <Animated.View entering={SlideInDown.springify().damping(18)}>
+          <UkraineAlertStatus
+            regionName={selectedRegion.name}
+            hasAlert={isAlert}
+          />
+          <Text style={[styles.alertMessage, { color: C.textSecondary }]}>
+            {alertStatusText}
+          </Text>
+        </Animated.View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
-    padding: 24,
-    alignItems: "center",
+    padding: Spacing.lg,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: "600",
+    ...Typography.title,
     marginBottom: 12,
-    color: "#111827",
   },
   dropdownButtonStyle: {
-    width: 280,
     height: 50,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 10,
-    justifyContent: "center",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    justifyContent: 'center',
     paddingHorizontal: 12,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   dropdownButtonTxtStyle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#1F2937",
-    textAlign: "center",
+    ...Typography.bodyMd,
+    textAlign: 'center',
   },
   dropdownMenuStyle: {
-    backgroundColor: "#E5E7EB",
-    borderRadius: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
   },
   dropdownItemStyle: {
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 10,
   },
   dropdownItemTxtStyle: {
-    fontSize: 16,
-    color: "#111827",
-    textAlign: "center",
+    ...Typography.body,
+    textAlign: 'center',
   },
   buttonsContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 12,
+    justifyContent: 'center',
   },
   button: {
-    borderRadius: 8,
+    borderRadius: Radius.sm,
   },
-  alertContainer: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-  },
-  alertText: {
-    fontSize: 22,
-    textAlign: "center",
-    color: "#EF4444",
-    fontWeight: "600",
-    fontFamily: "System",
+  alertMessage: {
+    ...Typography.bodyMd,
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
   },
 });

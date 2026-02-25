@@ -1,4 +1,15 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Typography } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 type Props = {
   regionName: string;
@@ -6,17 +17,55 @@ type Props = {
 };
 
 export default function UkraineAlertStatus({ regionName, hasAlert }: Props) {
+  const { C } = useTheme();
+  const pulseOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (hasAlert) {
+      pulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.3, { duration: 700 }),
+          withTiming(1, { duration: 700 })
+        ),
+        -1,
+        true
+      );
+    } else {
+      pulseOpacity.value = 1;
+    }
+  }, [hasAlert]);
+
+  const animatedBorderStyle = useAnimatedStyle(() => ({
+    borderColor: hasAlert
+      ? `rgba(239,68,68,${pulseOpacity.value})`
+      : C.safe,
+  }));
+
   return (
-    <View style={[styles.container, hasAlert ? styles.alert : styles.safe]}>
-      <Text style={styles.title}>
-        📍 Region: <Text style={styles.region}>{regionName}</Text>
-      </Text>
-      <Text style={styles.status}>
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: hasAlert ? C.alertBg : C.safeBg },
+        animatedBorderStyle,
+      ]}
+    >
+      <View style={styles.row}>
+        <Ionicons
+          name={hasAlert ? 'warning' : 'checkmark-circle'}
+          size={22}
+          color={hasAlert ? C.alert : C.safe}
+          style={styles.icon}
+        />
+        <Text style={[styles.title, { color: C.textPrimary }]}>
+          Region: <Text style={[styles.region, { color: C.primary }]}>{regionName}</Text>
+        </Text>
+      </View>
+      <Text style={[styles.status, { color: hasAlert ? C.alert : C.safe }]}>
         {hasAlert
-          ? "🚨 Air alert is active in your region!"
-          : "✅ No active alerts in your region."}
+          ? 'Air alert is active in your region!'
+          : 'No active alerts in your region.'}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -25,30 +74,25 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
     borderRadius: 12,
+    borderWidth: 1.5,
   },
-  alert: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#DC2626",
-    borderWidth: 1,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
-  safe: {
-    backgroundColor: "#ECFDF5",
-    borderColor: "#10B981",
-    borderWidth: 1,
+  icon: {
+    marginRight: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
-    textAlign: "center",
+    ...Typography.title,
   },
   region: {
-    fontWeight: "bold",
-    color: "#1D4ED8",
+    ...Typography.heading,
   },
   status: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#111827",
+    ...Typography.bodyMd,
+    textAlign: 'center',
   },
 });
