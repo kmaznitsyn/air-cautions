@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -13,12 +13,36 @@ import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 import { enableLayoutAnimations } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { LocaleProvider, useLocale } from './context/LocaleContext';
 
 SplashScreen.preventAutoHideAsync();
 enableLayoutAnimations(true);
 
-function LayoutInner() {
+function HeaderControls() {
   const { isDark, toggleTheme, C } = useTheme();
+  const { locale, toggleLocale } = useLocale();
+
+  return (
+    <View style={styles.headerRight}>
+      <Pressable onPress={toggleLocale} hitSlop={10} style={styles.langButton}>
+        <Text style={[styles.langLabel, { color: C.textPrimary }]}>
+          {locale === 'uk' ? 'EN' : 'UA'}
+        </Text>
+      </Pressable>
+
+      <Pressable onPress={toggleTheme} hitSlop={10}>
+        <Ionicons
+          name={isDark ? 'sunny-outline' : 'moon-outline'}
+          size={22}
+          color={C.textPrimary}
+        />
+      </Pressable>
+    </View>
+  );
+}
+
+function LayoutInner() {
+  const { isDark, C } = useTheme();
 
   const paperTheme = isDark
     ? {
@@ -68,19 +92,7 @@ function LayoutInner() {
           headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: C.background },
-          headerRight: () => (
-            <Pressable
-              onPress={toggleTheme}
-              hitSlop={12}
-              style={{ marginRight: 4 }}
-            >
-              <Ionicons
-                name={isDark ? 'sunny-outline' : 'moon-outline'}
-                size={22}
-                color={C.textPrimary}
-              />
-            </Pressable>
-          ),
+          headerRight: () => <HeaderControls />,
         }}
       />
     </PaperProvider>
@@ -90,7 +102,26 @@ function LayoutInner() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <LayoutInner />
+      <LocaleProvider>
+        <LayoutInner />
+      </LocaleProvider>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginRight: 4,
+  },
+  langButton: {
+    paddingHorizontal: 2,
+  },
+  langLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+});

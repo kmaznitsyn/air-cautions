@@ -40,7 +40,7 @@ export const Typography = {
   },
   title: {
     fontFamily: 'Inter_600SemiBold' as const,
-    fontSize: 20,
+    fontSize: 18,
   },
   heading: {
     fontFamily: 'Inter_700Bold' as const,

@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 
 type Props = {
   regionName: string;
@@ -18,6 +19,7 @@ type Props = {
 
 export default function UkraineAlertStatus({ regionName, hasAlert }: Props) {
   const { C } = useTheme();
+  const { t } = useLocale();
   const pulseOpacity = useSharedValue(1);
 
   useEffect(() => {
@@ -57,13 +59,12 @@ export default function UkraineAlertStatus({ regionName, hasAlert }: Props) {
           style={styles.icon}
         />
         <Text style={[styles.title, { color: C.textPrimary }]}>
-          Region: <Text style={[styles.region, { color: C.primary }]}>{regionName}</Text>
+          {t.regionLabel}{' '}
+          <Text style={[styles.region, { color: C.primary }]}>{regionName}</Text>
         </Text>
       </View>
       <Text style={[styles.status, { color: hasAlert ? C.alert : C.safe }]}>
-        {hasAlert
-          ? 'Air alert is active in your region!'
-          : 'No active alerts in your region.'}
+        {hasAlert ? t.statusAlert : t.statusSafe}
       </Text>
     </Animated.View>
   );

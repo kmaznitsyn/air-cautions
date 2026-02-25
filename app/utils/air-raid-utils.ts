@@ -8,8 +8,6 @@ interface Alert {
   finished_at: string | null;
 }
 
-console.log(API_KEY);
-
 async function getAlertHistory(
   uid: number,
   period: string = "month_ago"
@@ -38,39 +36,50 @@ export function defineAlertFromStatus(status: string) {
   return false;
 }
 
-export async function predictAirRaid(uid: number): Promise<string | undefined> {
-  try {
-    const alerts = await getAlertHistory(uid);
-    const airRaids = alerts.filter((alert) => alert.alert_type === "air_raid");
+export type PredictionLevel = "high" | "medium" | "low";
 
-    if (airRaids.length === 0) {
-      console.log("Ймовірність повітряної тривоги: 0%");
-      return;
-    }
+const PREDICTION_CACHE_TTL = 4 * 60 * 1000; // 4 minutes
 
-    const alertPerDay: Record<string, number> = {};
+type PredictionCacheEntry = {
+  level: PredictionLevel;
+  cachedAt: number;
+};
 
-    airRaids.forEach((alert) => {
-      const date = dayjs(alert.started_at).format("YYYY-MM-DD");
-      alertPerDay[date] = (alertPerDay[date] || 0) + 1;
-    });
+const predictionCache = new Map<number, PredictionCacheEntry>();
 
-    const totalDays = Object.keys(alertPerDay).length;
-    const totalAlerts = airRaids.length;
-    const averagePerDay = totalAlerts / totalDays;
+export function invalidatePredictionCache(uid: number): void {
+  predictionCache.delete(uid);
+}
 
-    const currentStatus = await getCurrentStatus(uid);
-
-    let prediction: string;
-    if (currentStatus === "A" || averagePerDay > 2) {
-      prediction = "🔴 Huge propability of an air raid alert";
-    } else if (averagePerDay > 1) {
-      prediction = "🟠 Medium propability of an air raid alert";
-    } else {
-      prediction = "🟢 Low propability of an air raid alert";
-    }
-    return prediction;
-  } catch (error) {
-    return "Unable to predict air raid alert due to " + error;
+export async function predictAirRaid(uid: number): Promise<PredictionLevel | undefined> {
+  const cached = predictionCache.get(uid);
+  if (cached && Date.now() - cached.cachedAt < PREDICTION_CACHE_TTL) {
+    return cached.level;
   }
+
+  const alerts = await getAlertHistory(uid);
+  const airRaids = alerts.filter((alert) => alert.alert_type === "air_raid");
+
+  if (airRaids.length === 0) {
+    return "low";
+  }
+
+  const alertPerDay: Record<string, number> = {};
+  airRaids.forEach((alert) => {
+    const date = dayjs(alert.started_at).format("YYYY-MM-DD");
+    alertPerDay[date] = (alertPerDay[date] || 0) + 1;
+  });
+
+  const averagePerDay = airRaids.length / Object.keys(alertPerDay).length;
+  const currentStatus = await getCurrentStatus(uid);
+
+  const level: PredictionLevel =
+    currentStatus === "A" || averagePerDay > 2
+      ? "high"
+      : averagePerDay > 1
+      ? "medium"
+      : "low";
+
+  predictionCache.set(uid, { level, cachedAt: Date.now() });
+  return level;
 }

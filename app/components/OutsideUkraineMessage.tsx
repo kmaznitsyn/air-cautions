@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import AnimatedButton from './AnimatedButton';
 import { Typography, Spacing, Radius } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import { useLocale } from '../context/LocaleContext';
 
 export default function OutsideUkraineMessage() {
   const router = useRouter();
   const { C } = useTheme();
+  const { t } = useLocale();
 
   return (
     <View
@@ -20,12 +22,11 @@ export default function OutsideUkraineMessage() {
         <Ionicons name="earth" size={28} color={C.textSecondary} />
       </View>
       <Text style={[styles.message, { color: C.textPrimary }]}>
-        You appear to be outside Ukraine. However, you can still check the
-        current air raid alert status below.
+        {t.outsideUkraine}
       </Text>
 
       <AnimatedButton
-        label="Get Air Alert State"
+        label={t.getAlertState}
         icon="shield-checkmark-outline"
         variant="primary"
         onPress={() => router.navigate('/air-raid-state')}

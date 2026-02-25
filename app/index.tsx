@@ -20,6 +20,7 @@ import AnimatedButton from './components/AnimatedButton';
 import { getUserRegionMatch } from './utils/location-utils';
 import { Spacing } from './constants/theme';
 import { useTheme } from './context/ThemeContext';
+import { useLocale } from './context/LocaleContext';
 
 function PulsingRing() {
   const { C } = useTheme();
@@ -28,18 +29,12 @@ function PulsingRing() {
 
   useEffect(() => {
     scale.value = withRepeat(
-      withSequence(
-        withTiming(1.35, { duration: 900 }),
-        withTiming(1, { duration: 900 })
-      ),
+      withSequence(withTiming(1.35, { duration: 900 }), withTiming(1, { duration: 900 })),
       -1,
       true
     );
     opacity.value = withRepeat(
-      withSequence(
-        withTiming(0.3, { duration: 900 }),
-        withTiming(1, { duration: 900 })
-      ),
+      withSequence(withTiming(0.3, { duration: 900 }), withTiming(1, { duration: 900 })),
       -1,
       true
     );
@@ -61,31 +56,16 @@ function PulsingRing() {
 }
 
 const pulseStyles = StyleSheet.create({
-  container: {
-    width: 90,
-    height: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ring: {
-    position: 'absolute',
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 2,
-  },
-  iconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { width: 90, height: 90, alignItems: 'center', justifyContent: 'center' },
+  ring: { position: 'absolute', width: 90, height: 90, borderRadius: 45, borderWidth: 2 },
+  iconWrapper: { alignItems: 'center', justifyContent: 'center' },
 });
 
 export default function Index() {
   const { C } = useTheme();
+  const { t } = useLocale();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<
-    Location.LocationGeocodedAddress[] | null
-  >(null);
+  const [addresses, setAddresses] = useState<Location.LocationGeocodedAddress[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInUkraine, setIsInUkraine] = useState(false);
 
@@ -95,7 +75,7 @@ export default function Index() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Location access denied');
+        setErrorMsg(t.errorLocationDenied);
         return;
       }
 
@@ -112,13 +92,10 @@ export default function Index() {
       if (insideUkraine) {
         setAddresses(geocoded);
         const userRegion = getUserRegionMatch(geocoded);
-        router.push({
-          pathname: '/air-raid-state',
-          params: { ...userRegion },
-        });
+        router.push({ pathname: '/air-raid-state', params: { ...userRegion } });
       }
-    } catch (error) {
-      setErrorMsg('Failed to fetch location');
+    } catch {
+      setErrorMsg(t.errorLocationFailed);
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +115,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]}>
-      <Stack.Screen options={{ title: 'Air Raid Alert' }} />
+      <Stack.Screen options={{ title: t.titleHome }} />
       <Snackbar visible={!!errorMsg} onDismiss={() => setErrorMsg('')}>
         {errorMsg}
       </Snackbar>
@@ -151,7 +128,7 @@ export default function Index() {
         {!isInUkraine && <OutsideUkraineMessage />}
         {isInUkraine && addresses !== null && (
           <AnimatedButton
-            label="Get Air Alert State"
+            label={t.getAlertState}
             icon="shield-checkmark-outline"
             variant="primary"
             onPress={() =>
@@ -173,27 +150,9 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    padding: Spacing.lg,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  mainContent: {
-    marginBottom: Spacing.md,
-  },
-  button: {
-    borderRadius: 12,
-    width: '80%',
-    alignSelf: 'center',
-    marginVertical: Spacing.sm,
-  },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { padding: Spacing.lg, flex: 1, justifyContent: 'center' },
+  logoContainer: { alignItems: 'center', marginBottom: Spacing.lg },
+  mainContent: { marginBottom: Spacing.md },
+  button: { borderRadius: 12, width: '80%', alignSelf: 'center', marginVertical: Spacing.sm },
 });
